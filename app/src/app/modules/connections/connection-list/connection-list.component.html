@@ -1,0 +1,184 @@
+<div class="connection-list-container">
+  <div class="header">
+    <h1>VPN Connections</h1>
+    <div class="connection-status-badge">
+      <span *ngIf="totalActiveConnections > 0" class="active-badge">
+        {{ totalActiveConnections }} active connection{{
+          totalActiveConnections > 1 ? "s" : ""
+        }}
+      </span>
+    </div>
+  </div>
+
+  <div class="filter-tabs">
+    <button
+      mat-button
+      [class.active]="activeFilter === 'all'"
+      (click)="filterConnections('all')"
+    >
+      All Connections
+    </button>
+    <button
+      mat-button
+      [class.active]="activeFilter === 'active'"
+      (click)="filterConnections('active')"
+    >
+      Active
+    </button>
+    <button
+      mat-button
+      [class.active]="activeFilter === 'disconnected'"
+      (click)="filterConnections('disconnected')"
+    >
+      Disconnected
+    </button>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading connections...</p>
+      </div>
+
+      <div *ngIf="error" class="error-container">
+        <p>{{ error }}</p>
+        <button mat-raised-button color="primary" (click)="refresh()">
+          <mat-icon>refresh</mat-icon>
+          Try Again
+        </button>
+      </div>
+
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <mat-form-field class="filter-field">
+          <mat-label>Filter</mat-label>
+          <input
+            matInput
+            (keyup)="applyFilter($event)"
+            placeholder="Ex. 192.168.1.1"
+            #input
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <table mat-table [dataSource]="dataSource" matSort>
+          <!-- IP Address Column -->
+          <ng-container matColumnDef="ipAddress">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              IP Address
+            </th>
+            <td mat-cell *matCellDef="let connection">
+              {{ connection.ipAddress }}
+            </td>
+          </ng-container>
+
+          <!-- User ID Column -->
+          <ng-container matColumnDef="userId">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>User ID</th>
+            <td mat-cell *matCellDef="let connection">
+              {{ connection.userId }}
+            </td>
+          </ng-container>
+
+          <!-- Connected At Column -->
+          <ng-container matColumnDef="connectedAt">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              Connected At
+            </th>
+            <td mat-cell *matCellDef="let connection">
+              {{ connection.connectedAt | date : "medium" }}
+            </td>
+          </ng-container>
+
+          <!-- Duration Column -->
+          <ng-container matColumnDef="duration">
+            <th mat-header-cell *matHeaderCellDef>Duration</th>
+            <td mat-cell *matCellDef="let connection">
+              {{ calculateDuration(connection) }}
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+            <td mat-cell *matCellDef="let connection">
+              <mat-chip
+                [color]="connection.status === 'active' ? 'primary' : undefined"
+                selected
+              >
+                {{ connection.status }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let connection">
+              <button
+                mat-icon-button
+                color="primary"
+                [routerLink]="['/connections', connection.id]"
+                matTooltip="View Details"
+              >
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button
+                *ngIf="connection.status === 'active'"
+                mat-icon-button
+                color="warn"
+                (click)="disconnectConnection(connection.id, $event)"
+                matTooltip="Disconnect"
+              >
+                <mat-icon>link_off</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="deleteConnection(connection.id, $event)"
+                matTooltip="Delete Record"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns"
+            (click)="viewConnection(row.id)"
+            class="connection-row"
+          ></tr>
+
+          <!-- Row shown when no matching data -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="6">
+              <div class="no-data">
+                <p *ngIf="input.value">
+                  No connections matching filter "{{ input.value }}"
+                </p>
+                <p *ngIf="!input.value">No connections found</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <mat-paginator
+          [pageSizeOptions]="[5, 10, 25, 100]"
+          aria-label="Select page of connections"
+        ></mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <button
+    mat-fab
+    color="primary"
+    class="refresh-button"
+    (click)="refresh()"
+    *ngIf="!isLoading"
+  >
+    <mat-icon>refresh</mat-icon>
+  </button>
+</div>

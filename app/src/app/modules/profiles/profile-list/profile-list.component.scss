@@ -1,0 +1,110 @@
+.profile-list-container {
+  padding: 16px;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0;
+    color: #3f51b5;
+  }
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+
+  p {
+    margin-top: 16px;
+  }
+}
+
+.filter-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.profile-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.mat-column-isDefault {
+  width: 100px;
+  text-align: center;
+}
+
+.mat-column-protocol {
+  width: 120px;
+}
+
+.mat-column-port {
+  width: 100px;
+}
+
+.mat-column-actions {
+  width: 150px;
+  text-align: right;
+
+  button {
+    visibility: hidden;
+  }
+}
+
+.profile-row:hover .mat-column-actions button {
+  visibility: visible;
+}
+
+.no-data {
+  padding: 20px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.refresh-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .mat-column-actions button {
+    visibility: visible;
+  }
+
+  .mat-column-server {
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

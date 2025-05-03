@@ -1,0 +1,185 @@
+<div class="profile-detail-container">
+  <div class="header">
+    <button mat-icon-button (click)="goBack()" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>{{ isNewProfile ? "Create New VPN Profile" : "Edit VPN Profile" }}</h1>
+
+    <div class="spacer"></div>
+
+    <button
+      *ngIf="!isNewProfile && profile && !profile.isDefault"
+      mat-raised-button
+      color="primary"
+      (click)="setAsDefault()"
+    >
+      <mat-icon>star</mat-icon>
+      <span>Set as Default</span>
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading profile details...</p>
+  </div>
+
+  <div *ngIf="error" class="error-container">
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadProfile()">
+      <mat-icon>refresh</mat-icon>
+      Try Again
+    </button>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="content">
+    <mat-card class="profile-form-card">
+      <mat-card-content>
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <div class="form-section">
+            <h2>Basic Information</h2>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Profile Name</mat-label>
+                <input matInput formControlName="name" required />
+                <mat-error *ngIf="profileForm.get('name')?.invalid"
+                  >Profile name is required</mat-error
+                >
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Server Address</mat-label>
+                <input
+                  matInput
+                  formControlName="server"
+                  required
+                  placeholder="vpn.example.com or 192.168.1.1"
+                />
+                <mat-error *ngIf="profileForm.get('server')?.invalid"
+                  >Server address is required</mat-error
+                >
+              </mat-form-field>
+            </div>
+
+            <div class="form-row-split">
+              <mat-form-field appearance="outline">
+                <mat-label>Port</mat-label>
+                <input matInput formControlName="port" type="number" required />
+                <mat-error *ngIf="profileForm.get('port')?.invalid">
+                  Port is required and must be between 1 and 65535
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Protocol</mat-label>
+                <mat-select formControlName="protocol" required>
+                  <mat-option
+                    *ngFor="let protocol of protocols"
+                    [value]="protocol"
+                  >
+                    {{ protocol.toUpperCase() }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="profileForm.get('protocol')?.invalid"
+                  >Protocol is required</mat-error
+                >
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h2>Advanced Settings</h2>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Encryption Cipher</mat-label>
+                <input matInput formControlName="cipher" />
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>CA Certificate</mat-label>
+                <textarea
+                  matInput
+                  formControlName="ca"
+                  rows="3"
+                  placeholder="-----BEGIN CERTIFICATE-----"
+                ></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Client Certificate</mat-label>
+                <textarea
+                  matInput
+                  formControlName="cert"
+                  rows="3"
+                  placeholder="-----BEGIN CERTIFICATE-----"
+                ></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Private Key</mat-label>
+                <textarea
+                  matInput
+                  formControlName="key"
+                  rows="3"
+                  placeholder="-----BEGIN PRIVATE KEY-----"
+                ></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>TLS Auth Key</mat-label>
+                <textarea
+                  matInput
+                  formControlName="tlsAuth"
+                  rows="3"
+                  placeholder="-----BEGIN OpenVPN Static key V1-----"
+                ></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row toggle-row">
+              <mat-slide-toggle formControlName="compLzo" color="primary">
+                Enable LZO Compression
+              </mat-slide-toggle>
+            </div>
+
+            <div class="form-row toggle-row" *ngIf="isNewProfile">
+              <mat-slide-toggle formControlName="isDefault" color="primary">
+                Set as Default Profile
+              </mat-slide-toggle>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button mat-button type="button" (click)="goBack()">Cancel</button>
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              [disabled]="profileForm.invalid || isSaving"
+            >
+              <mat-spinner
+                *ngIf="isSaving"
+                diameter="20"
+                class="spinner-in-button"
+              ></mat-spinner>
+              <span>{{
+                isNewProfile ? "Create Profile" : "Save Changes"
+              }}</span>
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

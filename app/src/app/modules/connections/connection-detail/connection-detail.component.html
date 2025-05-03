@@ -1,0 +1,123 @@
+<div class="connection-detail-container">
+  <div class="header">
+    <button mat-icon-button (click)="goBack()" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Connection Details</h1>
+
+    <div class="spacer"></div>
+
+    <button
+      *ngIf="connection?.status === 'active'"
+      mat-raised-button
+      color="warn"
+      [disabled]="isDisconnecting"
+      (click)="disconnectConnection()"
+    >
+      <mat-spinner
+        *ngIf="isDisconnecting"
+        diameter="20"
+        class="spinner-in-button"
+      ></mat-spinner>
+      <mat-icon *ngIf="!isDisconnecting">link_off</mat-icon>
+      <span>Disconnect</span>
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading connection details...</p>
+  </div>
+
+  <div *ngIf="error" class="error-container">
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="loadConnectionDetails()">
+      <mat-icon>refresh</mat-icon>
+      Try Again
+    </button>
+  </div>
+
+  <div *ngIf="!isLoading && !error && connection" class="content">
+    <!-- Connection Status Card -->
+    <mat-card class="status-card">
+      <mat-card-content>
+        <div class="status-header">
+          <div class="status-title">Connection Status</div>
+          <div
+            class="status-chip"
+            [ngClass]="{ active: connection.status === 'active' }"
+          >
+            {{ connection.status }}
+          </div>
+        </div>
+
+        <div class="connection-user" (click)="viewUser()">
+          <mat-icon>person</mat-icon>
+          <span>{{ username || "Unknown User" }}</span>
+          <mat-icon>launch</mat-icon>
+        </div>
+
+        <div class="connection-info">
+          <div class="info-row">
+            <div class="info-label">IP Address</div>
+            <div class="info-value">{{ connection.ipAddress }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Connected At</div>
+            <div class="info-value">
+              {{ connection.connectedAt | date : "medium" }}
+            </div>
+          </div>
+          <div class="info-row" *ngIf="connection.disconnectedAt">
+            <div class="info-label">Disconnected At</div>
+            <div class="info-value">
+              {{ connection.disconnectedAt | date : "medium" }}
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Duration</div>
+            <div class="info-value">{{ durationFormatted }}</div>
+          </div>
+          <div class="info-row" *ngIf="connection.deviceInfo">
+            <div class="info-label">Device Info</div>
+            <div class="info-value">{{ connection.deviceInfo }}</div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Traffic Statistics Card -->
+    <mat-card class="stats-card">
+      <mat-card-header>
+        <mat-card-title>Traffic Statistics</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="stats-container">
+          <div class="stat-item">
+            <div class="stat-value">{{ bytesReceivedFormatted }}</div>
+            <div class="stat-label">Received</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ bytesSentFormatted }}</div>
+            <div class="stat-label">Sent</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ totalBytesFormatted }}</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+
+        <div class="traffic-chart">
+          <!-- In a real application, you could add a chart here showing traffic over time -->
+          <div class="chart-placeholder">
+            <mat-icon>trending_up</mat-icon>
+            <p>
+              Traffic data visualization would be displayed here in a real
+              application
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
