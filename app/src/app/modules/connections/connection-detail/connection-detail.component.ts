@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Connection } from '../../../core/models/connection';
 import { ConnectionService } from '../../../core/services/connection.service';
 import { UserService } from '../../../core/services/user.service';
-import { catchError, forkJoin, map, of } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-connection-detail',
@@ -52,7 +52,7 @@ export class ConnectionDetailComponent implements OnInit {
           // Fetch the username for this connection
           return connection.userId;
         }),
-        switchMap((userId) => {
+        switchMap((userId: string) => {
           return this.userService.getUserById(userId).pipe(
             map((user) => user.username),
             catchError(() => of('Unknown User'))
@@ -66,7 +66,7 @@ export class ConnectionDetailComponent implements OnInit {
         })
       )
       .subscribe({
-        next: (username) => {
+        next: (username: string | null) => {
           if (username) {
             this.username = username;
           }

@@ -1,17 +1,29 @@
-version: "3"
-
 services:
   # OpenVPN Community Edition container
   openvpn:
-    image: kylemanna/openvpn:latest
-    container_name: openvpn
+    build:
+      context: ./openvpn
+      dockerfile: Dockerfile.openvpn
     cap_add:
       - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.default.forwarding=1
+      - net.ipv6.conf.all.forwarding=1
     volumes:
-      - ./data/openvpn:/etc/openvpn
+      - openvpn-data:/etc/openvpn
     ports:
       - "1194:1194/udp"
+      - "7505:7505/tcp"  # Management interface
+    environment:
+      - DEBUG=1
+      - OVPN_SERVER_URL=udp://localhost  # Change to your server's public IP/domain
+      - OVPN_NETWORK=192.168.255.0/24
+      - OVPN_DNS=8.8.8.8
+      - OVPN_CIPHER=AES-256-GCM
+      - OVPN_AUTH=SHA256
     restart: unless-stopped
+    networks:
+      - vpn-network
 
   # PostgreSQL 17 container
   postgres:
@@ -26,6 +38,8 @@ services:
       - POSTGRES_PASSWORD=vpnsecurepass
       - POSTGRES_DB=vpn_dashboard
     restart: unless-stopped
+    networks:
+      - vpn-network
 
   # Dashboard server (our application)
   dashboard:
@@ -39,6 +53,19 @@ services:
     environment:
       - DATABASE_URL=postgres://vpnadmin:vpnsecurepass@postgres:5432/vpn_dashboard
       - OPENVPN_CONFIG_DIR=/etc/openvpn
+      - OPENVPN_STATUS_LOG=/etc/openvpn/openvpn-status.log
+      - OPENVPN_MANAGEMENT_HOST=openvpn
+      - OPENVPN_MANAGEMENT_PORT=7505
+      - EASYRSA_PATH=/usr/share/easy-rsa
     volumes:
-      - ./data/openvpn:/etc/openvpn
+      - openvpn-data:/etc/openvpn
     restart: unless-stopped
+    networks:
+      - vpn-network
+
+volumes:
+  openvpn-data:
+
+networks:
+  vpn-network:
+    driver: bridge

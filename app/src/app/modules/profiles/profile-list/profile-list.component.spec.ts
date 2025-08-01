@@ -1,23 +1,29 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { describe, it, expect, mock } from 'bun:test';
+import { of } from 'rxjs';
 
 import { ProfileListComponent } from './profile-list.component';
+import { ProfileService } from '../../../core/services/profile.service';
 
 describe('ProfileListComponent', () => {
-  let component: ProfileListComponent;
-  let fixture: ComponentFixture<ProfileListComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ProfileListComponent]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(ProfileListComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
   it('should create', () => {
+    const mockProfileService = {
+      getProfiles: mock(() => of([])),
+      deleteProfile: mock(),
+      setDefaultProfile: mock()
+    };
+    const mockRouter = {
+      navigate: mock()
+    };
+    const mockSnackBar = {
+      open: mock()
+    };
+
+    const component = new ProfileListComponent(
+      mockProfileService as any,
+      mockRouter as any,
+      mockSnackBar as any
+    );
+
     expect(component).toBeTruthy();
   });
 });

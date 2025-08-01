@@ -8,9 +8,7 @@ describe("Auth Middleware", () => {
   // Create a test app that uses the auth middleware and adds a simple
   // endpoint that will only be accessible if the middleware allows it
   beforeAll(() => {
-    app = new Elysia()
-      .use(authMiddleware)
-      .get("/secured", () => ({ message: "Authenticated" }));
+    app = authMiddleware.get("/secured", () => ({ message: "Authenticated" }));
   });
 
   describe("Authentication", () => {

@@ -1,0 +1,75 @@
+# OpenVPN Dockerfile based on kylemanna/openvpn
+# This creates a ready-to-use OpenVPN server with all secondary setup steps completed
+
+FROM kylemanna/openvpn:latest
+
+# Metadata
+LABEL maintainer="OpenVPN API Project"
+LABEL description="Pre-configured OpenVPN server based on kylemanna/openvpn"
+LABEL version="1.0"
+
+# Environment variables for configuration
+ENV OVPN_SERVER_URL="udp://localhost"
+ENV OVPN_NETWORK="192.168.255.0/24" 
+ENV OVPN_ROUTES=""
+ENV OVPN_NAT="true"
+ENV OVPN_DNS="8.8.8.8,8.8.4.4"
+ENV OVPN_COMP_LZO="false"
+ENV OVPN_CIPHER="AES-256-GCM"
+ENV OVPN_AUTH="SHA256"
+ENV OVPN_TLS_CIPHER="TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384"
+ENV DEBUG="1"
+
+# Copy initialization scripts
+COPY openvpn-init.sh /usr/local/bin/openvpn-init.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Make scripts executable
+RUN chmod +x /usr/local/bin/openvpn-init.sh /usr/local/bin/docker-entrypoint.sh
+
+# Create directories for configuration and certificates
+RUN mkdir -p /etc/openvpn/pki /etc/openvpn/ccd
+
+# Pre-generate CA and DH parameters during build to speed up container startup
+RUN set -e && \
+    # Set environment variables for non-interactive PKI generation
+    export EASYRSA_BATCH="1" && \
+    export EASYRSA_REQ_CN="OpenVPN-CA" && \
+    export EASYRSA_REQ_COUNTRY="US" && \
+    export EASYRSA_REQ_PROVINCE="CA" && \
+    export EASYRSA_REQ_CITY="San Francisco" && \
+    export EASYRSA_REQ_ORG="OpenVPN" && \
+    export EASYRSA_REQ_EMAIL="admin@openvpn.local" && \
+    export EASYRSA_REQ_OU="IT" && \
+    export EASYRSA_KEY_SIZE="2048" && \
+    export EASYRSA_CA_EXPIRE="3650" && \
+    export EASYRSA_CERT_EXPIRE="3650" && \
+    # Initialize PKI structure (DNS will be handled at runtime)
+    ovpn_genconfig -u udp://localhost && \
+    # Pre-generate CA certificate and DH parameters
+    echo "Pre-generating CA and DH parameters..." && \
+    easyrsa init-pki && \
+    easyrsa build-ca nopass && \
+    easyrsa gen-dh && \
+    easyrsa build-server-full server nopass && \
+    # Set proper permissions
+    chown -R root:root /etc/openvpn && \
+    chmod -R 600 /etc/openvpn/pki/private && \
+    echo "CA and DH parameters pre-generated successfully"
+
+# Set up management interface
+RUN echo "management 0.0.0.0 7505" >> /etc/openvpn/openvpn.conf.template
+
+# Expose OpenVPN port and management port
+EXPOSE 1194/udp 7505/tcp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD netstat -lu | grep :1194 || exit 1
+
+# Volume for persistent data
+VOLUME ["/etc/openvpn"]
+
+# Use custom entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["ovpn_run"]

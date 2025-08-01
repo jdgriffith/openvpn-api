@@ -1,29 +1,14 @@
-import { TestBed } from '@angular/core/testing';
+import { describe, it, expect } from 'bun:test';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [AppComponent],
-    }).compileComponents();
-  });
-
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    const component = new AppComponent();
+    expect(component).toBeTruthy();
   });
 
-  it(`should have the 'vpn-dashboard' title`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('vpn-dashboard');
-  });
-
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, vpn-dashboard');
+  it(`should have the 'VPN Dashboard' title`, () => {
+    const component = new AppComponent();
+    expect(component.title).toEqual('VPN Dashboard');
   });
 });

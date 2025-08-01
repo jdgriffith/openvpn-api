@@ -6,6 +6,11 @@ export interface Profile {
   port: number;
   protocol: 'udp' | 'tcp';
   cipher: string;
+  ca?: string;
+  cert?: string;
+  key?: string;
+  tlsAuth?: string;
+  compLzo?: boolean;
   isDefault?: boolean;
   createdAt: Date;
   updatedAt?: Date;
