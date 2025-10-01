@@ -87,23 +87,17 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .get(
     "/users/:username",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.getUserStatus(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .post(
     "/users",
-    {
-      body: t.Object({
-        username: t.String(),
-        password: t.String(),
-      }),
-    },
     async ({ body }) => {
       try {
         const { username, password } = body;
@@ -111,45 +105,51 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      body: t.Object({
+        username: t.String(),
+        password: t.String(),
+      }),
     }
   )
   .delete(
     "/users/:username",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.deleteUser(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .put(
     "/users/:username/password",
-    {
-      params: t.Object({ username: t.String() }),
-      body: t.Object({ password: t.String() }),
-    },
     async ({ params: { username }, body: { password } }) => {
       try {
         return await mockOpenVPNService.resetUserPassword(username, password);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      params: t.Object({ username: t.String() }),
+      body: t.Object({ password: t.String() }),
     }
   )
   .put(
     "/users/:username/status",
-    {
-      params: t.Object({ username: t.String() }),
-      body: t.Object({ enabled: t.Boolean() }),
-    },
     async ({ params: { username }, body: { enabled } }) => {
       try {
         return await mockOpenVPNService.setUserStatus(username, enabled);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      params: t.Object({ username: t.String() }),
+      body: t.Object({ enabled: t.Boolean() }),
     }
   )
   .get("/server/status", async () => {
@@ -168,14 +168,14 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .get(
     "/users/:username/profile",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.getUserProfile(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .get("/server/config", async () => {
     try {
@@ -186,17 +186,17 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .put(
     "/server/config",
-    {
-      body: t.Object({
-        config: t.Record(t.String(), t.Any()),
-      }),
-    },
     async ({ body: { config } }) => {
       try {
         return await mockOpenVPNService.updateServerConfig(config);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      body: t.Object({
+        config: t.Record(t.String(), t.Any()),
+      }),
     }
   );
 
@@ -243,7 +243,6 @@ describe("OpenVPN Controller", () => {
       );
 
       const body = await response.json();
-      console.log("User status response:", body);
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("username", "user1");
       expect(body).toHaveProperty("enabled", true);
@@ -410,7 +409,8 @@ describe("OpenVPN Controller", () => {
 
       const body = await response.json();
       expect(response.status).toBe(200);
-      expect(body).toHaveProperty("vpn.server.port", "1194");
+      expect(body["vpn.server.port"]).toBe("1194");
+      expect(body["vpn.server.protocol"]).toBe("udp");
     });
   });
 

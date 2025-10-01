@@ -9,10 +9,11 @@
     "db:push": "bun run src/db/migrate.ts"
   },
   "dependencies": {
-    "elysia": "latest",
+    "@sinclair/typebox": "^0.34.41",
+    "dotenv": "^16.3.1",
     "drizzle-orm": "^0.30.0",
-    "postgres": "^3.4.3",
-    "dotenv": "^16.3.1"
+    "elysia": "latest",
+    "postgres": "^3.4.3"
   },
   "devDependencies": {
     "bun-types": "latest",
