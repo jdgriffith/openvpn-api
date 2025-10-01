@@ -87,23 +87,17 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .get(
     "/users/:username",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.getUserStatus(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .post(
     "/users",
-    {
-      body: t.Object({
-        username: t.String(),
-        password: t.String(),
-      }),
-    },
     async ({ body }) => {
       try {
         const { username, password } = body;
@@ -111,45 +105,51 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      body: t.Object({
+        username: t.String(),
+        password: t.String(),
+      }),
     }
   )
   .delete(
     "/users/:username",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.deleteUser(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .put(
     "/users/:username/password",
-    {
-      params: t.Object({ username: t.String() }),
-      body: t.Object({ password: t.String() }),
-    },
     async ({ params: { username }, body: { password } }) => {
       try {
         return await mockOpenVPNService.resetUserPassword(username, password);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      params: t.Object({ username: t.String() }),
+      body: t.Object({ password: t.String() }),
     }
   )
   .put(
     "/users/:username/status",
-    {
-      params: t.Object({ username: t.String() }),
-      body: t.Object({ enabled: t.Boolean() }),
-    },
     async ({ params: { username }, body: { enabled } }) => {
       try {
         return await mockOpenVPNService.setUserStatus(username, enabled);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      params: t.Object({ username: t.String() }),
+      body: t.Object({ enabled: t.Boolean() }),
     }
   )
   .get("/server/status", async () => {
@@ -168,14 +168,14 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .get(
     "/users/:username/profile",
-    { params: t.Object({ username: t.String() }) },
     async ({ params: { username } }) => {
       try {
         return await mockOpenVPNService.getUserProfile(username);
       } catch (error) {
         return { error: error.message, status: 404 };
       }
-    }
+    },
+    { params: t.Object({ username: t.String() }) }
   )
   .get("/server/config", async () => {
     try {
@@ -186,17 +186,17 @@ const openvpnController = new Elysia({ prefix: "/api/openvpn" })
   })
   .put(
     "/server/config",
-    {
-      body: t.Object({
-        config: t.Record(t.String(), t.Any()),
-      }),
-    },
     async ({ body: { config } }) => {
       try {
         return await mockOpenVPNService.updateServerConfig(config);
       } catch (error) {
         return { error: error.message, status: 400 };
       }
+    },
+    {
+      body: t.Object({
+        config: t.Record(t.String(), t.Any()),
+      }),
     }
   );
 
@@ -234,6 +234,21 @@ describe("OpenVPN Controller", () => {
       expect(body.users[0]).toHaveProperty("username", "user1");
       expect(body.users[1]).toHaveProperty("username", "user2");
     });
+
+    it("should handle errors from service", async () => {
+      mockOpenVPNService.getConnectedUsers.mockRejectedValueOnce(
+        new Error("Failed to read status log")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/users/connected")
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to read status log");
+      expect(body).toHaveProperty("status", 500);
+    });
   });
 
   describe("GET /api/openvpn/users/:username", () => {
@@ -243,7 +258,6 @@ describe("OpenVPN Controller", () => {
       );
 
       const body = await response.json();
-      console.log("User status response:", body);
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("username", "user1");
       expect(body).toHaveProperty("enabled", true);
@@ -278,6 +292,28 @@ describe("OpenVPN Controller", () => {
       const body = await response.json();
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("success", true);
+    });
+
+    it("should handle errors when creating user", async () => {
+      mockOpenVPNService.createUser.mockRejectedValueOnce(
+        new Error("User already exists")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "existinguser",
+            password: "password123",
+          }),
+        })
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "User already exists");
+      expect(body).toHaveProperty("status", 400);
     });
   });
 
@@ -323,6 +359,27 @@ describe("OpenVPN Controller", () => {
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("success", true);
     });
+
+    it("should handle errors when resetting password", async () => {
+      mockOpenVPNService.resetUserPassword.mockRejectedValueOnce(
+        new Error("Failed to update password")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/users/user1/password", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: "newpassword123",
+          }),
+        })
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to update password");
+      expect(body).toHaveProperty("status", 400);
+    });
   });
 
   describe("PUT /api/openvpn/users/:username/status", () => {
@@ -359,6 +416,27 @@ describe("OpenVPN Controller", () => {
       expect(body).toHaveProperty("success", true);
       expect(body).toHaveProperty("enabled", false);
     });
+
+    it("should handle errors when updating user status", async () => {
+      mockOpenVPNService.setUserStatus.mockRejectedValueOnce(
+        new Error("Failed to update user status")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/users/user1/status", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            enabled: true,
+          }),
+        })
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to update user status");
+      expect(body).toHaveProperty("status", 400);
+    });
   });
 
   describe("GET /api/openvpn/server/status", () => {
@@ -372,6 +450,21 @@ describe("OpenVPN Controller", () => {
       expect(body).toHaveProperty("status", "running");
       expect(body).toHaveProperty("connectedUsers", 2);
       expect(body).toHaveProperty("totalUsers", 5);
+    });
+
+    it("should handle errors when getting server status", async () => {
+      mockOpenVPNService.getServerStatus.mockRejectedValueOnce(
+        new Error("Failed to get server status")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/server/status")
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to get server status");
+      expect(body).toHaveProperty("status", 500);
     });
   });
 
@@ -388,6 +481,23 @@ describe("OpenVPN Controller", () => {
       expect(body).toHaveProperty("success", true);
       expect(body).toHaveProperty("message", "Service restarted successfully");
     });
+
+    it("should handle errors when restarting server", async () => {
+      mockOpenVPNService.restartService.mockRejectedValueOnce(
+        new Error("Failed to restart service")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/server/restart", {
+          method: "POST",
+        })
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to restart service");
+      expect(body).toHaveProperty("status", 500);
+    });
   });
 
   describe("GET /api/openvpn/users/:username/profile", () => {
@@ -400,6 +510,17 @@ describe("OpenVPN Controller", () => {
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("profile");
     });
+
+    it("should return 404 for non-existing user profile", async () => {
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/users/nonexistentuser/profile")
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error");
+      expect(body).toHaveProperty("status", 404);
+    });
   });
 
   describe("GET /api/openvpn/server/config", () => {
@@ -410,7 +531,23 @@ describe("OpenVPN Controller", () => {
 
       const body = await response.json();
       expect(response.status).toBe(200);
-      expect(body).toHaveProperty("vpn.server.port", "1194");
+      expect(body["vpn.server.port"]).toBe("1194");
+      expect(body["vpn.server.protocol"]).toBe("udp");
+    });
+
+    it("should handle errors when getting server config", async () => {
+      mockOpenVPNService.getServerConfig.mockRejectedValueOnce(
+        new Error("Failed to read config file")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/server/config")
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to read config file");
+      expect(body).toHaveProperty("status", 500);
     });
   });
 
@@ -432,6 +569,29 @@ describe("OpenVPN Controller", () => {
       expect(response.status).toBe(200);
       expect(body).toHaveProperty("success", true);
       expect(body).toHaveProperty("message", "Configuration updated successfully");
+    });
+
+    it("should handle errors when updating server config", async () => {
+      mockOpenVPNService.updateServerConfig.mockRejectedValueOnce(
+        new Error("Failed to write config file")
+      );
+
+      const response = await app.handle(
+        new Request("http://localhost/api/openvpn/server/config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            config: {
+              "vpn.server.port": "1195",
+            },
+          }),
+        })
+      );
+
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body).toHaveProperty("error", "Failed to write config file");
+      expect(body).toHaveProperty("status", 400);
     });
   });
 });
